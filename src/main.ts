@@ -5,4 +5,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   await app.listen(3000);
 }
-bootstrap();
+
+try{
+  bootstrap();
+} catch (e) {
+  console.log("Error during starting app: ", e);
+}
