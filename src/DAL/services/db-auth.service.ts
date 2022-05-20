@@ -4,7 +4,7 @@ import {UserModel} from "../models/user.model";
 
 interface User {
     email: string;
-    password: string;
+    hash: string;
 }
 
 @Injectable()
@@ -42,9 +42,9 @@ export class DbAuthService {
         try {
             const response = await DatabaseConnectionService.executeQuery({
                 name: "create user",
-                text: "INSERT INTO users (email, password, firstname, lastname, createdat, updatedat) " +
-                    "values ($1, $2, $3, $4, $5, $6)",
-                values: [user.email, user.password, "", "", date, date]
+                text: "INSERT INTO users (email, hash, createdAt, updatedAt) " +
+                    "values ($1, $2, $3, $4)",
+                values: [user.email, user.hash, date, date]
             });
             return true;
         } catch (err) {

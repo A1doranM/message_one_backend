@@ -59,7 +59,7 @@ export class AuthService {
             const hashedPass = await this.hash(dto.password);
             return this.db.createUser({
                 email: dto.email,
-                password: hashedPass.toString()
+                hash: hashedPass.toString()
             });
         } catch (err) {
             return false;
