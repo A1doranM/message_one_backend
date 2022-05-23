@@ -1,6 +1,6 @@
 import {PassportStrategy} from "@nestjs/passport";
 import {ExtractJwt, Strategy} from "passport-jwt";
-import {Injectable, UnauthorizedException} from "@nestjs/common";
+import {Injectable} from "@nestjs/common";
 import {ConfigService} from "@nestjs/config";
 import {DbAuthService} from "../../DAL/services/db-auth.service";
 
@@ -11,7 +11,7 @@ export class JwtAssignTokenStrategy extends PassportStrategy(Strategy, "jwt") {
     ) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-            secretOrKey: config.get("JWT_ASSIGN_TOKEN_SECRET")
+            secretOrKey: config.get("JWT_REFRESH_TOKEN_SECRET")
         });
     }
 

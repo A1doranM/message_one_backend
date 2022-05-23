@@ -12,7 +12,13 @@ export class AuthController {
 
     @Post("/local/signup")
     signupLocal(@Body() dto: AuthDto) {
-        return this.authService.signupLocal(dto);
+        return this.authService.signupLocal(dto)
+            .then(result => {
+                return result;
+            })
+            .catch(err => {
+                return err;
+            })
     }
 
     @Post("/local/signin")
