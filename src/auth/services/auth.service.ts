@@ -5,19 +5,23 @@ import {randomBytes, scrypt} from "node:crypto";
 import {ConfigService} from "@nestjs/config";
 import {JwtService} from "@nestjs/jwt";
 import {Tokens} from "../types/tokens.type";
+import {DbUsersService} from "../../DAL/services/db-users.service";
 
 @Injectable()
 export class AuthService {
-    private db: DbAuthService;
+    private dbauth: DbAuthService;
+    private dbusers: DbUsersService;
     private jwt: JwtService;
     private config: ConfigService;
 
     constructor(
-        dbService: DbAuthService,
+        dbAuthService: DbAuthService,
+        dbUsersService: DbUsersService,
         jwt: JwtService,
         config: ConfigService,
     ) {
-        this.db = dbService;
+        this.dbauth = dbAuthService;
+        this.dbusers = dbUsersService;
         this.jwt = jwt;
         this.config = config;
     }
@@ -83,13 +87,13 @@ export class AuthService {
 
     private async updateRefreshTokenHash(userId: number, refreshToken: string) {
         const hash = await this.hash(refreshToken);
-        await this.db.updateRefreshToken(userId, hash);
+        await this.dbauth.updateRefreshToken(userId, hash);
     }
 
     async signupLocal(dto: AuthDto): Promise<Tokens | Error> {
         try {
             const hashedPass = await this.hash(dto.password);
-            const newUser = await this.db.createUser({
+            const newUser = await this.dbauth.createUser({
                 email: dto.email,
                 hash: hashedPass.toString()
             });
@@ -101,30 +105,33 @@ export class AuthService {
         }
     }
 
-    async signinLocal(dto: AuthDto) {
+    async signinLocal(dto: AuthDto): Promise<Tokens | Error> {
         try {
-            const user = await this.db.getUserByEmail(dto.email);
-            console.log("USER: ", user);
+            const user = await this.dbusers.getUserByEmail(dto.email);
             if (user && await this.verify(dto.password, user.hash)) {
-                const token = await this.signToken(user.id, user.email);
-                const payload = {
-                    access_token: token
-                }
-
-                return payload;
+                const tokens = await this.getTokens(user.id, user.email);
+                return tokens;
             } else {
-                return "<h1>Incorrect name or pass</h1>"
+                return Promise.reject("Incorrect name or pass");
             }
         } catch (err) {
-            return "<h1>Something went wrong in signIn</h1>";
+            return Promise.reject("Error when trying to signupLocal: " + err);
         }
     }
 
-    async logout() {
-
+    async logout(userId: number) {
+        try {
+            return await this.dbauth.removeRefreshToken(userId);
+        } catch (err) {
+            return Promise.reject("Error when trying to logout");
+        }
     }
 
-    async refreshToken() {
-
+    async refreshToken(userId: number) {
+        try {
+            return await this.dbauth.removeRefreshToken(userId);
+        } catch (err) {
+            return Promise.reject("Error when trying to logout");
+        }
     }
 }

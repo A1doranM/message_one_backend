@@ -2,40 +2,12 @@ import {ForbiddenException, Injectable} from "@nestjs/common";
 import {DatabaseConnectionService} from "../db-connection/database-connection";
 import {UserModel} from "../models/user.model";
 
-interface User {
-    email: string;
-    hash: string;
-}
-
 @Injectable()
 export class DbAuthService {
-    async getUserByEmail(email: string): Promise<UserModel> {
-        try {
-            const response = await DatabaseConnectionService.executeQuery({
-                name: "get user",
-                text: "SELECT * FROM users WHERE email = $1",
-                values: [email]
-            });
-            return response.rows[0];
-        } catch (err) {
-            throw new ForbiddenException(err.message);
-        }
-    }
-
-    async getUserById(id: number): Promise<UserModel> {
-        try {
-            const response = await DatabaseConnectionService.executeQuery({
-                name: "get user by id",
-                text: "SELECT * FROM users WHERE id = $1",
-                values: [id]
-            });
-            return response.rows[0];
-        } catch (err) {
-            throw new ForbiddenException(err.message);
-        }
-    }
-
-    async createUser(user: User): Promise<UserModel> {
+    async createUser(user: {
+        email: string,
+        hash: string
+    }): Promise<UserModel> {
         const today = new Date();
         const date = `${today.getFullYear()}-${(today.getMonth() + 1)}-${today.getDate()}`;
 
@@ -60,6 +32,20 @@ export class DbAuthService {
                 values: [userId, hashedToken]
             });
             console.log(response.rows[0]);
+            return response.rows[0];
+        } catch (err) {
+            throw new ForbiddenException(err.message);
+        }
+    }
+
+    async removeRefreshToken(userId: number): Promise<boolean> {
+        try {
+            const response = await DatabaseConnectionService.executeQuery({
+                name: "remove refresh token by userId",
+                text: "UPDATE users SET hashedRefreshToken = $2 WHERE users.id = $1 RETURNING *",
+                values: [userId, null]
+            });
+            console.log(response);
             return response.rows[0];
         } catch (err) {
             throw new ForbiddenException(err.message);
