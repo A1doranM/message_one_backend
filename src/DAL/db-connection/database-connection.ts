@@ -23,8 +23,7 @@ export class DatabaseConnectionService {
             const res = await client.query(query.text, query.values);
             return res;
         } catch (err) {
-            console.log(err.stack);
-            return new Error(err);
+            throw new Error(err);
         } finally {
             client.release();
         }

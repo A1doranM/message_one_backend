@@ -2,9 +2,9 @@ import DateTimeFormat = Intl.DateTimeFormat;
 
 export interface UserModel {
     id: number;
-    createdAt: DateTimeFormat;
-    updatedAt: DateTimeFormat;
+    created_at: DateTimeFormat;
+    updated_at: DateTimeFormat;
     email: string;
     hash: string;
-    hashedRefreshToken?: string;
+    hashed_refresh_token?: string;
 }

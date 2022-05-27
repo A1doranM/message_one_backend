@@ -1,4 +1,4 @@
-import {Injectable} from "@nestjs/common";
+import {ForbiddenException, Injectable} from "@nestjs/common";
 import {DbAuthService} from "../../DAL/services/db-auth.service";
 import {AuthDto} from "../dto/auth.dto";
 import {randomBytes, scrypt} from "node:crypto";
@@ -78,32 +78,35 @@ export class AuthService {
         await this.dbauth.updateRefreshToken(userId, hash);
     }
 
-    async signupLocal(dto: AuthDto): Promise<Tokens | Error> {
+    async signUpLocal(dto: AuthDto): Promise<Tokens | Error> {
         try {
             const hashedPass = await this.hash(dto.password);
             const newUser = await this.dbauth.createUser({
                 email: dto.email,
                 hash: hashedPass.toString()
+            }).catch(_ => {
+                return Promise.reject("Email already exists.");
             });
-            const tokens = await this.getTokens(newUser.id, newUser.email)
+            const tokens = await this.getTokens(newUser.id, newUser.email);
             await this.updateRefreshTokenHash(newUser.id, tokens.refresh_token);
             return tokens;
         } catch (err) {
-            return Promise.reject("Error when trying to signupLocal: " + err);
+            return Promise.reject(err);
         }
     }
 
-    async signinLocal(dto: AuthDto): Promise<Tokens | Error> {
+    async signInLocal(dto: AuthDto): Promise<Tokens | Error> {
         try {
             const user = await this.dbusers.getUserByEmail(dto.email);
             if (user && await this.verify(dto.password, user.hash)) {
                 const tokens = await this.getTokens(user.id, user.email);
+                await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
                 return tokens;
             } else {
                 return Promise.reject("Incorrect name or pass");
             }
         } catch (err) {
-            return Promise.reject("Error when trying to signupLocal: " + err);
+            return Promise.reject("signinLocal internal server error");
         }
     }
 
@@ -115,19 +118,19 @@ export class AuthService {
         }
     }
 
-    async refreshToken(userId: number, refreshToken: string) {
+    async refreshTokens(userId: number, refreshToken: string) {
         try {
             const user = await this.dbusers.getUserById(userId);
-            if(!user) {
-                console.log("USER 2: ", user);
-                return Promise.reject("User does not found");
+            if (!user || !user.hashed_refresh_token) {
+                return Promise.reject("Access denied");
             }
-            console.log("ToKENS COMPARISON: ", refreshToken !== user.hashedRefreshToken, refreshToken, user.hashedRefreshToken);
-            if(refreshToken !== user.hashedRefreshToken) return Promise.reject("Tokens unequals");
 
-            console.log(user, refreshToken !== user.hashedRefreshToken);
+            const rtMatches = await this.verify(refreshToken, user.hashed_refresh_token);
+            if (!rtMatches) return Promise.reject("Access denied");
+
             const tokens = await this.getTokens(user.id, user.email);
             await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
+
             return tokens;
         } catch (err) {
             return Promise.reject("Error when trying to logout");

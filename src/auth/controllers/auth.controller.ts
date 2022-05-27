@@ -1,7 +1,6 @@
 import {Body, Controller, Post, Req, UseGuards} from "@nestjs/common";
 import {AuthService} from "../services/auth.service";
 import {AuthDto} from "../dto/auth.dto";
-import {AuthGuard} from "@nestjs/passport";
 import {GetUser} from "../decorators/get-user.decorator";
 import { AtGuards } from "../guards/at.guards";
 import { RtGuards } from "../guards/rt.guards";
@@ -18,7 +17,7 @@ export class AuthController {
     @Public()
     @Post("local/signup")
     signupLocal(@Body() dto: AuthDto) {
-        return this.authService.signupLocal(dto)
+        return this.authService.signUpLocal(dto)
             .then(result => {
                 return result;
             })
@@ -30,7 +29,7 @@ export class AuthController {
     @Public()
     @Post("local/signin")
     signinLocal(@Body() dto: AuthDto) {
-       return this.authService.signinLocal(dto)
+       return this.authService.signInLocal(dto)
             .then(result => {
                 return result;
             })
@@ -42,7 +41,6 @@ export class AuthController {
     @UseGuards(AtGuards)
     @Post("logout")
     logout(@GetUser("sub") userId: number) {
-        console.log(userId)
         return this.authService.logout(userId);
     }
 
@@ -50,7 +48,6 @@ export class AuthController {
     @UseGuards(RtGuards)
     @Post("refresh")
     async refreshToken(@GetUser() user: any) {
-        console.log("USER: ", user);
-        return await this.authService.refreshToken(user["sub"], user["refreshToken"]);
+        return await this.authService.refreshTokens(user["sub"], user["refreshToken"]);
     }
 }

@@ -14,13 +14,13 @@ export class DbAuthService {
         try {
             const response = await DatabaseConnectionService.executeQuery({
                 name: "create user",
-                text: "INSERT INTO users (email, hash, createdAt, updatedAt) " +
+                text: "INSERT INTO users (email, hash, created_at, updated_at) " +
                     "values ($1, $2, $3, $4) RETURNING *",
                 values: [user.email, user.hash, date, date]
             });
             return response.rows[0];
         } catch (err) {
-            throw new ForbiddenException("Email must be unique");
+            throw new Error(err.detail);
         }
     }
 
@@ -28,10 +28,9 @@ export class DbAuthService {
         try {
             const response = await DatabaseConnectionService.executeQuery({
                 name: "update refresh token by userId",
-                text: "UPDATE users SET hashedRefreshToken = $2 WHERE users.id = $1 RETURNING *",
+                text: "UPDATE users SET hashed_refresh_token = $2 WHERE users.id = $1 RETURNING *",
                 values: [userId, hashedToken]
             });
-            console.log(response.rows[0]);
             return response.rows[0];
         } catch (err) {
             throw new ForbiddenException(err.message);
@@ -42,10 +41,9 @@ export class DbAuthService {
         try {
             const response = await DatabaseConnectionService.executeQuery({
                 name: "remove refresh token by userId",
-                text: "UPDATE users SET hashedRefreshToken = $2 WHERE users.id = $1 RETURNING *",
+                text: "UPDATE users SET hashed_refresh_token = $2 WHERE users.id = $1 RETURNING *",
                 values: [userId, null]
             });
-            console.log(response);
             return response.rows[0];
         } catch (err) {
             throw new ForbiddenException(err.message);
