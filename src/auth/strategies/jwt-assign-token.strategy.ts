@@ -8,11 +8,12 @@ export class JwtAssignTokenStrategy extends PassportStrategy(Strategy, "jwt") {
     constructor(private config: ConfigService) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-            secretOrKey: config.get("JWT_REFRESH_TOKEN_SECRET")
+            secretOrKey: config.get("JWT_ASSIGN_TOKEN_SECRET")
         });
     }
 
     async validate(payload: any) {
+        console.log("PAYLOAD: ", payload);
         return payload;
     }
 }

@@ -26,7 +26,7 @@ export class AuthService {
         this.config = config;
     }
 
-    private async hash(password): Promise<string> {
+    private async hash(password: string): Promise<string> {
         return new Promise((resolve, reject) => {
             const salt = randomBytes(16).toString("hex")
 
@@ -37,7 +37,7 @@ export class AuthService {
         })
     }
 
-    private async verify(password, hash): Promise<boolean> {
+    private async verify(password: string, hash: string): Promise<boolean> {
         return new Promise((resolve, reject) => {
             const [salt, key] = hash.split(":")
             scrypt(password, salt, 64, (err, derivedKey) => {
@@ -47,23 +47,11 @@ export class AuthService {
         })
     }
 
-    private async signToken(userId: number, email: string): Promise<string> {
-        const data = {
-            sub: userId,
-            email: email,
-        }
-
-        return this.jwt.signAsync(data, {
-            expiresIn: "15m",
-            secret: this.config.get("JWT_ASSIGN_TOKEN_SECRET")
-        });
-    }
-
     private async getTokens(userId: number, email: string) {
         const [accessToken, refreshToken] = await Promise.all([
             this.jwt.signAsync({
                     sub: userId,
-                    email,
+                    email: email,
                 },
                 {
                     secret: this.config.get("JWT_ASSIGN_TOKEN_SECRET"),
@@ -71,7 +59,7 @@ export class AuthService {
                 }),
             this.jwt.signAsync({
                     sub: userId,
-                    email,
+                    email: email,
                 },
                 {
                     secret: this.config.get("JWT_REFRESH_TOKEN_SECRET"),
@@ -127,9 +115,20 @@ export class AuthService {
         }
     }
 
-    async refreshToken(userId: number) {
+    async refreshToken(userId: number, refreshToken: string) {
         try {
-            return await this.dbauth.removeRefreshToken(userId);
+            const user = await this.dbusers.getUserById(userId);
+            if(!user) {
+                console.log("USER 2: ", user);
+                return Promise.reject("User does not found");
+            }
+            console.log("ToKENS COMPARISON: ", refreshToken !== user.hashedRefreshToken, refreshToken, user.hashedRefreshToken);
+            if(refreshToken !== user.hashedRefreshToken) return Promise.reject("Tokens unequals");
+
+            console.log(user, refreshToken !== user.hashedRefreshToken);
+            const tokens = await this.getTokens(user.id, user.email);
+            await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
+            return tokens;
         } catch (err) {
             return Promise.reject("Error when trying to logout");
         }
